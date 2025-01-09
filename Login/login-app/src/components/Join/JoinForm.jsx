@@ -41,14 +41,14 @@ const JoinForm = ({join}) => {
                         autoComplete='password'
                         required />
             </div>
-            {/* nema */}
+            {/* name */}
             <div>
-                <label htmlFor="nema">nema</label>
+                <label htmlFor="name">name</label>
                 <input type="text"
-                        id='nema'
-                        placeholder='nema'
-                        name='nema'
-                        autoComplete='nema'
+                        id='name'
+                        placeholder='name'
+                        name='name'
+                        autoComplete='name'
                         required />
             </div>
             {/* email */}

@@ -5,7 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.aloha.login.domain.CustomUser;
 import com.aloha.login.domain.Users;
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/users")
 public class UserController {
     
@@ -86,10 +86,10 @@ public class UserController {
     // @PreAuthorize("hasRole('ROLE_USER')")                // 사용자 권한
     // @PreAuthorize("hasRole('ROLE_ADMIN')")               // 관리자 권한
     // @PreAuthorize("hasAuyRole('ROLE_USER', 'ROLE_ADMIN')")  // 사용자 OR 관리자
-    @PreAuthorize("hasRole('ROLE_ADMIN') or #p0.username == authentication.name")  // 관리자 또는 사용자본인
+    @PreAuthorize(" hasRole('ROLE_ADMIN') or #p0.username == authentication.name ")  // 관리자 또는 사용자본인
     @PutMapping("")
     public ResponseEntity<?> update(@RequestBody Users user) throws Exception {
-        
+        log.info("여기가 오류");
         boolean result = userService.update(user);
 
         if (result) {

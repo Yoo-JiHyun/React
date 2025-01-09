@@ -50,13 +50,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void login(Users user, HttpServletRequest request) throws Exception {
+    public void login(Users user, HttpServletRequest request) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'login'");
     }
 
     @Override
     public boolean update(Users user) throws Exception {
+
+        // 비밀번호 암호화
+        String password = user.getPassword();
+        String encodedPassword = passwordEncoder.encode(password);
+        user.setPassword(encodedPassword);
+
         int result = userMapper.update(user);
         return result > 0;
     }

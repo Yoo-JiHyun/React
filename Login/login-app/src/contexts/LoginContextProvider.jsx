@@ -10,12 +10,24 @@ export const LoginContext = createContext()
 
 const LoginContextProvider = ({children}) => {
 
+    // 로딩중
+    const [IsLoading, setIsLoading] = useState(true)
     // 로그인 여부
-    const [isLogin, setIsLogin] = useState(false)
+    const [isLogin, setIsLogin] = useState( () => {
+      const savedIsLogin = localStorage.getItem("isLogin")
+      return savedIsLogin ?? false
+    })
     // 사용자 정보
-    const [userInfo, setUserInfo] = useState(null)
+    const [userInfo, setUserInfo] = useState( () => {
+      const savedUserInfo = localStorage.getItem("userInfo")
+      return savedUserInfo ? JSON.parse(savedUserInfo) : null
+    })
     // 권한 정보
-    const [roles, setRoles] = useState({isUser : false, isAdmin : false})
+    const [roles, setRoles] = useState( () => {
+      const savedRoles = localStorage.getItem("roles")
+      return savedRoles ? JSON.parse(savedRoles) : {isUser : false, isAdmin : false}
+    })
+
     // 페이지 이동
     const navigate = useNavigate()
 
@@ -48,7 +60,7 @@ const LoginContextProvider = ({children}) => {
           loginSetting(authorization, data)
 
           // 로그인 성공 alert
-          Swal.alert('로그인 성공', '메인 화면으로 이동합니다.', 'SUCCESS',
+          Swal.alert('로그인 성공', '메인 화면으로 이동합니다.', 'success',
             () => navigate("/")
           )
         }
@@ -64,28 +76,64 @@ const LoginContextProvider = ({children}) => {
     }
 
     // 로그아웃 함수
-    const logout = () => {
-        setIsLogin(false)
-        // TODO : ...
+    const logout = (force=false) => {
+        // 강제 로그아웃
+        if ( force ) {
+          // 로딩중
+          setIsLoading(true)
+          // 로그아웃 세팅
+          logoutSetting()
+          // 페이지 이동 ➡ "/" (메인)
+          navigate("/")
+          // 로딩끝
+          setIsLoading(false)
+          return
+        }
+        // 로그아웃 확인
+        Swal.confirm("로그아웃 하시겠습니까?", "로그아웃을 진행합니다.", "warning",
+          (result) => {
+            if ( result.isConfirmed ) {
+              Swal.alert("로그아웃 성공", "로그아웃 되었습니다.", 'success')
+              // 로그아웃 세팅
+              logoutSetting()
+              // 페이지 이동 ➡ "/" (메인)
+              navigate("/")
+              return
+            }
+          }
+        )
+
+        
+    }
+    // 로그아웃 세팅
+    const logoutSetting = () => {
+      // Authorization 헤더 초기화
+      api.defaults.headers.common.Authorization = undefined
+
+      // 로그인 여부 : false
+      setIsLogin(false)
+      localStorage.removeItem("isLogin")
+      
+      // 유저 정보 초기화
+      setUserInfo(null)
+      localStorage.removeItem("userInfo")
+      
+      // 권한 정보 초기화
+      setRoles( {isUser: false, isAdmin: false} )
+      localStorage.removeItem("roles")
+
+      // 쿠키 제거
+      Cookies.remove("jwt")
     }
 
     // 자동 로그인
+    // 1. 쿠키에서 jwt 가져오기
+    // 2. jwt 있으면, 사용자 정보 요청
+    // 3. 로그인 세팅 ( 로그인 여부, 사용자 정보, 권한)
     // TODO: 쿠키에 저장된 JWT 를 읽어와서 로그인
     const autoLogin = async () => {
-      // 쿠키에서 JWT 가져오기
-      const jwt = Cookies.get("jwt")
-
-      // JWT 가 쿠키에 없을 때
-      if( !jwt ) {
-        // TODO : 로그아웃 세팅
-        return
-      }
-      // JWT 가 쿠키에 있을 떄
-      console.log(`jwt : ${jwt}`);
-      const authorization = `Bearer ${jwt}`
-
-      // JWT 를 Authorization 헤더에 등록
-      api.defaults.headers.common.Authorization = authorization
+      console.log(`자동 로그인...`)
+      
 
       // 사용자 정보 요청
       let response
@@ -125,8 +173,10 @@ const LoginContextProvider = ({children}) => {
 
       // 로그인 여부
       setIsLogin(true)
+      localStorage.setItem("isLogin", "ture")                     // localStorage 등록
       // 사용자 정보
       setUserInfo(data)
+      localStorage.setItem("userInfo", JSON.stringify(data))      // localStorage 등록
       // 권한 정보
       const updatedRoles = {isUser: false, isAdmin: false}
       data.authList.forEach( (obj) => {
@@ -134,20 +184,43 @@ const LoginContextProvider = ({children}) => {
         if( obj.auth == 'ROLE_ADMIN' ) updatedRoles.isAdmin = true
       })
       setRoles(updatedRoles)
+      localStorage.setItem("roles", JSON.stringify(updatedRoles)) // localStorage 등록
     }
 
     useEffect(() => {
-      // 자동 로그인
-      // 1. 쿠키에서 jwt 가져오기
-      // 2. jwt 있으면, 사용자 정보 요청
-      // 3. 로그인 세팅 ( 로그인 여부, 사용자 정보, 권한)
-      autoLogin()
+      // 쿠키에서 JWT 가져오기
+      const jwt = Cookies.get("jwt")
+      
+
+      // JWT 가 쿠키에 없을 때
+      if( !jwt ) {
+        // TODO : 로그아웃 세팅
+        return
+      }
+      // JWT 가 쿠키에 있을 떄
+      const authorization = `Bearer ${jwt}`
+
+      // JWT 를 Authorization 헤더에 등록
+      api.defaults.headers.common.Authorization = authorization
+      
+      const savedIsLogin = localStorage.getItem("isLogin")
+      if ( !savedIsLogin || savedIsLogin == false ) {
+        autoLogin().then(() => {
+          console.log(`로딩 완료`);
+          
+          // 로딩 완료
+          setIsLoading(false)
+        })
+      } else {
+        // 로딩 완료
+        setIsLoading(false)
+      }
     }, [])
     
 
   return (
     // 컨텍스트 값 지정 ➡ value={ ?, ? }
-    <LoginContext.Provider value={ {isLogin, logout, login, userInfo, roles} }>
+    <LoginContext.Provider value={ { IsLoading, isLogin, logout, login, userInfo, roles} }>
         {children}
     </LoginContext.Provider>
   )

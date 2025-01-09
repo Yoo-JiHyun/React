@@ -46,7 +46,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         // "Bearer {JWT}" 체크
         // 헤더가 없거나 올바르지 않으면 다음 필터로 진행
-        if ( authorization == null || authorization.length() == 0 || authorization.startsWith( SecurityConstants.TOKEN_PREFIX)) {
+        if ( authorization == null || authorization.length() == 0 || !authorization.startsWith( SecurityConstants.TOKEN_PREFIX)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -57,7 +57,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         // 2. 인증 시도
         Authentication authentication = jwtProvider.getAuthenticationToken(jwt);
-
+        log.info("인증 시도 : " + authentication);
         if ( authentication != null && authentication.isAuthenticated() ) {
             log.info("JWT 를 통한 인증 완료");
         }
